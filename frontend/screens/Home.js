@@ -1,16 +1,16 @@
 import React from 'react'
 import { View, Text, TouchableOpacity, Image, StyleSheet, StatusBar } from 'react-native'
-import {wp, hp} from '../Functions/Porcentajes'
+import {wp, hp, wpp, hpp, letra} from '../Functions/Porcentajes'
 
 import Ico from '../assets/icono.png'
 
 const Home = (props) => {
-
+    
     const solitario = () => {
-        props.navigation.navigate('Play')
+        props.navigation.navigate('Solitario')
     }
     const MultiJugador = () => {
-        props.navigation.navigate('MultiJugador')
+        props.navigation.navigate('Loading', {Multijugador: true,Codigo:false})
     }
     const Jugando_Con_Amigos = () => {
         props.navigation.navigate('JCASala')
@@ -23,9 +23,9 @@ const Home = (props) => {
                 source={Ico}
                 style={{
                     width: wp(57),    //No calculado
-                    height: hp(30),   //No calculado
-                    top: hp(10),
-                    left: wp(21.5)
+                    height: hpp(30, 1, 0),   //No calculado
+                    top: hpp(10, 0, 10),
+                    alignSelf: "center"
                 }}
             />
             <TouchableOpacity style={styles.btn} onPress={() => solitario()}>
@@ -49,16 +49,16 @@ export default Home
 const styles = StyleSheet.create({
     text: {
         color: '#DA0037',
-        fontSize: 20,
+        fontSize: letra(3),
         textAlign: "center",
         textAlignVertical: 'center',
     },
     btn: {
-        width: wp(50),
-        height: hp(6),
+        width: wpp(50,1,20),
+        height: hpp(6, 1, 15),
         justifyContent: 'center',
         backgroundColor: '#EDEDED',
-        top: hp(15),
+        top: hpp(15,0,0),
         marginTop: wp(5),
         left: wp(25),
         borderRadius: hp(2)

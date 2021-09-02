@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { View, Pressable, StyleSheet, Image, Text, TouchableOpacity, Dimensions } from 'react-native'
-import { wp, hp, wpp, hpp, letra } from '../Functions/Porcentajes'
+import { wp, hp,wpp, hpp, letra} from '../Functions/Porcentajes'
 import socket  from '../Functions/SocketIo'
 
 import Circle from '../assets/circle.png'
@@ -8,8 +8,9 @@ import Cruz from '../assets/Cruz.png'
 
 
 
-const Solitario = (props) => {
-
+const Play = (props) => {
+    
+    let Sign = Math.floor(1 + Math.random() * (2-1+1))
     const [state, setState] = useState({
         Img:[   
                 0,0,0,
@@ -18,10 +19,13 @@ const Solitario = (props) => {
             ],
         })
     const [Jugada, setJugada] = useState({        
-        Cruz: true
+        Cruz: Sign == 1?true:false
     })
     const [ganador, setGanador] = useState({
         ganador: ""
+    })
+    const [NJugada, setNJugada] = useState({
+        NJugada: 0
     })
     const posib = [
         [0, 1, 2],
@@ -33,48 +37,92 @@ const Solitario = (props) => {
         [0, 4, 8],
         [2, 4, 6],
     ]
-    const move = (btn) => {
-        if(state.Img[btn] != 1 && state.Img[btn] != 2){
-            let random = Math.floor((Math.random() * (8 - 0 + 1)));
-            let alguienGano = false
-            if(Jugada.Cruz == true){
-                state.Img[btn] = 1;
-                posib.forEach(posibilidad => {
-                    if(state.Img[posibilidad[0]] == 1 && state.Img[posibilidad[1]] == 1 && state.Img[posibilidad[2]] == 1){
-                        setGanador({ganador: "las cruces"})
-                        alguienGano = true
-                    }
-                });
+
+    const verif = () => {
+        posib.forEach(posibilidad => {
+            if(state.Img[posibilidad[0]] == 1 && state.Img[posibilidad[1]] == 1 && state.Img[posibilidad[2]] == 1){
+                setGanador({ganador: "las cruces"})
             }
-            if(!alguienGano){
-                while(state.Img[random] != 0){
-                    random = Math.floor((Math.random() * (8 - 0 + 1)));
-                }
-                state.Img[random] = 2
+        });
+        posib.forEach(posibilidad => {
+            if(state.Img[posibilidad[0]] == 2 && state.Img[posibilidad[1]] == 2 && state.Img[posibilidad[2]] == 2){
+                setGanador({ganador: "los circulos"})
             }
-            posib.forEach(posibilidad => {
-                if(state.Img[posibilidad[0]] == 2 && state.Img[posibilidad[1]] == 2 && state.Img[posibilidad[2]] == 2){
-                    setGanador({ganador: "los circulos"})
-                    alguienGano = true
-                }
-            });
-            if(!state.Img.includes(0) && alguienGano == false){
-                setGanador({ganador: "Empate"})
-            }
-            setState({Img: state.Img})
-            setJugada({Cruz: true})
+        });
+        if(!state.Img.includes(0)){
+            setGanador({ganador: "Empate"})
         }
     }
 
-    const PlayAgain = () => {
-        setState({Img: [0,0,0,0,0,0,0,0,0]});
-        setGanador({ganador: ""})
+
+
+    socket.on("disconnect", () => {
+        socket.signo = "";
+        socket.emit('socketDesconectado');
+    });
+    socket.on('socketDesconectado', () => {
+        socket.signo = "";
+        props.navigation.navigate('Home')
+    })
+
+
+    socket.on("EmitMove", data => {
+        state.Img[data.Pos] = data.Signo
+        setState({Img: state.Img})
+        setNJugada({ NJugada: data.NJugada });
+        verif()   
+    })
+    socket.on('Signo', data => {
+        setJugada({Cruz: data})
+        if(data == true){
+            socket.signo = "X";
+        } else {
+            socket.signo = "O";
+        }
+    })
+    
+    const move = (btn) => {
+        if(NJugada.NJugada % 2 == 0 && socket.signo == "X" && state.Img[btn] == 0) {
+            state.Img[btn] = 1
+            setNJugada({NJugada: NJugada.NJugada + 1})
+            socket.emit("EmitMove", {Pos: btn, Signo: 1, NJugada: (NJugada.NJugada + 1)})
+        } else if(NJugada.NJugada % 2 != 0 && socket.signo == "O" && state.Img[btn] == 0){
+            state.Img[btn] = 2
+            setNJugada({NJugada: NJugada.NJugada+1})
+            socket.emit("EmitMove", {Pos: btn, Signo: 2, NJugada: (NJugada.NJugada + 1)})  
+        }
+        verif()
     }
+
+    const PlayAgain = () => {
+        socket.emit('PlayAgain')
+        // socket.on('PlayAgain', () => {
+        //     setState({Img: [0,0,0,0,0,0,0,0,0]});
+        //     setGanador({ganador: ""})
+        // })
+    }
+
+
+    
     return (
         <View style={styles.app}>
             {
                 ganador.ganador.length > 0 &&
                     <Text style={styles.textoGanador}>{ganador.ganador != "Empate"?`Ganaron ${ganador.ganador}`:"Empate"}</Text>
+            }
+            {
+                Jugada.Cruz == true && (
+                    !state.Img.includes(1) && !state.Img.includes(2) && (
+                        <Text style={[{marginBottom: hp(-5)},styles.textoGanador]}>Empezas</Text>
+                    )
+                )
+            }
+            {
+                Jugada.Cruz == false && (
+                    !state.Img.includes(1) && !state.Img.includes(2) && (
+                        <Text style={[{marginBottom: hp(-5)},styles.textoGanador]}>Empieza tu amigo</Text>
+                    )
+                )        
             }
             <View style={[{ marginTop: ganador.ganador.length > 0? Dimensions.get('window').height < 650? wp(-15):wp(-25):0},styles.container]}>
                 <View>
@@ -145,7 +193,7 @@ const Solitario = (props) => {
     )
 }
 
-export default Solitario
+export default Play
 
 const styles = StyleSheet.create({
     boxs: {

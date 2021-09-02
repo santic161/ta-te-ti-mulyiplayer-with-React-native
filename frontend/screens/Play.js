@@ -35,7 +35,6 @@ const Play = (props) => {
     ]
     const move = (btn) => {
         if(state.Img[btn] != 1 && state.Img[btn] != 2){
-            socket.emit('Move', btn);
             if(Jugada.Cruz == true){
                 state.Img[btn] = 1
                 posib.forEach(posibilidad => {
