@@ -7,7 +7,11 @@ const Loading = (props) => {
 
     useEffect(() => {
         socket.on('Multijugador', data => {
-            props.navigation.navigate('MultiJugador', data)
+            if(props.route.params.Multijugador && props.route.params.replay){
+                props.navigation.navigate('MultiJugador', {data, replay: true})
+            }else{
+                props.navigation.navigate('MultiJugador', {data, replay: false})
+            }
         })
         if(props.route.params.Codigo) {
 
@@ -18,9 +22,9 @@ const Loading = (props) => {
         }
         return () => {
             console.log(`Unmounted`)
+            // if(socket) {socket.disconnect()}
         }
     }, [])
-    //Hacer visible cierto texto, Pasado unos segundos mostrar y borrar otro
     if(props.route.params.Codigo){
         return (
             <View style={{height: '100%', backgroundColor: '#171717'}}>

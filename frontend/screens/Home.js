@@ -10,7 +10,7 @@ const Home = (props) => {
         props.navigation.navigate('Solitario')
     }
     const MultiJugador = () => {
-        props.navigation.navigate('Loading', {Multijugador: true,Codigo:false})
+        props.navigation.navigate('Loading', {Multijugador: true,Codigo:false,replay:false})
     }
     const Jugando_Con_Amigos = () => {
         props.navigation.navigate('JCASala')

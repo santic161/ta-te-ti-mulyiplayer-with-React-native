@@ -9,6 +9,7 @@ let codigosPartidas = [];
 let multijugadorArray = [];
 let partida = false;
 let Cpartida = "";
+let seg = 0;
 
 io.on('connection', socket => {
     socket.on("CreateRoom", (data) => {
@@ -51,7 +52,6 @@ io.on('connection', socket => {
     socket.on('Multijugador', () => {
         if (multijugadorArray.length <= 1) {    //si el array es menor a 2 lugares..........
             multijugadorArray.push(socket); //Agrega a un socket.........
-           //Lito, Grax
             if (multijugadorArray.length == 2) { // cuando se llena.............
                 let random = Math.floor(Math.random() * (1 - 2)) + 2; // Numero random para identificar quien es X o O
                 multijugadorArray[0].data.enemy = multijugadorArray[1];
@@ -82,11 +82,45 @@ io.on('connection', socket => {
         socket.data.enemy.emit('EmitMove', data);
     })
     socket.on('PlayAgain', () => {
+        socket.data.v = true;
+        function detenerse() {
+            clearInterval(cronometro);
+        }
+        if(seg < 60 && socket.data.enemy.data.v == false) {
+            cronometro = setInterval(
+                function () {
+                    seg++
+                    console.log(seg);
+                    if (seg == 60) {
+                        detenerse()
+                    }
+                }, 1000
+            )
+        }
         
+        if (socket.data.enemy.data.v == true && seg < 60) {
+            console.log('UNIDOS A LA PARTIDA');
+            let random = Math.floor(Math.random() * (1 - 2)) + 2;
+            socket.emit('Multijugador');
+            socket.data.enemy.emit('Multijugador');
+            if (random == 1) {
+                socket.data.signo = "X";
+                socket.emit("Signomulti", true);
+                socket.data.enemy.data.signo = "O";
+                socket.data.enemy.emit("Signomulti", false);
+            } else if (random == 2) {
+                socket.data.signo = "O";
+                socket.emit("Signomulti", false);
+                socket.data.enemy.data.signo = "X";
+                socket.data.enemy.emit("Signomulti", true);
+            }
+        } else if (seg >= 60) {
+            socket.emit('Abandonar')
+        }
     })
 })
 
-
-server.listen(3000, () => {
+    
+server.listen(3000, () => { 
     console.log('Servidor andando perfectamente');
 })

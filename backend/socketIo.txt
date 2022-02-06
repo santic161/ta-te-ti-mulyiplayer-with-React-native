@@ -1,8 +1,0 @@
-CreateRoom: Este socket.emit se utiliza para crear una sala para jugar con amigos. Este seria el admin de la partida. Yo te envio un codigo de 6 digitos y si es admin de la partida o no. Vos lo que tenes que hacer es crear una sala.
-Codigo que corresponde:
-socket.emit('CreateRoom', {Codigo: MatchCode, isAdmin: true})
-
-JoinRoom: Complemento del anterior, Este une a un jugador a una sala. El jugador ingresa un codigo de 6 cifras. Si mal no me equivoco es string, Si lo necesitas en entero avisame. Lo que tenes que hacer es verificar que esa sala exista y si existe que se una, Ademas devolveme que ya se unio a la misma direccion (Haceme un socket.emit("JoinRoom"), Lo necesito para cambiar de pantalla.
-Codigo que corresponde:
-socket.emit('JoinRoom', {Codigo: Codigo.code, isAdmin: false })    
-

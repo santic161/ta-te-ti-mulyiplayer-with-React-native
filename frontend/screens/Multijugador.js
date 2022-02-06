@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { View, Pressable, StyleSheet, Image, Text, TouchableOpacity, Dimensions } from 'react-native'
 import { wp, hp,wpp, hpp, letra} from '../Functions/Porcentajes'
 import socket  from '../Functions/SocketIo'
@@ -10,7 +10,6 @@ import Cruz from '../assets/Cruz.png'
 
 const MultiJugador = (props) => {
     
-    let Sign = Math.floor(1 + Math.random() * (2-1+1))
     const [state, setState] = useState({
         Img:[   
                 0,0,0,
@@ -18,15 +17,15 @@ const MultiJugador = (props) => {
                 0,0,0
             ],
         })
-    const [Jugada, setJugada] = useState({        
-        Cruz: Sign == 1?true:false
-    })
     const [ganador, setGanador] = useState({
         ganador: ""
     })
     const [NJugada, setNJugada] = useState({
         NJugada: 0
     })
+    const [Jugador, setJugador] = useState(2)
+    const [Playagain, setPlayAgain] = useState(false)
+    const [Show, setShow] = useState(true)
     const posib = [
         [0, 1, 2],
         [3, 4, 5],
@@ -38,59 +37,65 @@ const MultiJugador = (props) => {
         [2, 4, 6],
     ]
 
-    const verif = () => {
-        posib.forEach(posibilidad => {
-            if(state.Img[posibilidad[0]] == 1 && state.Img[posibilidad[1]] == 1 && state.Img[posibilidad[2]] == 1){
-                setGanador({ganador: "las cruces"})
+    const verif = useMemo(() => {
+        return () => {
+            console.log('Verificando...')
+            posib.forEach(posibilidad => {
+                if(state.Img[posibilidad[0]] == 1 && state.Img[posibilidad[1]] == 1 && state.Img[posibilidad[2]] == 1){
+                    setGanador({ganador: "las cruces"})
+                }
+            });
+            posib.forEach(posibilidad => {
+                if(state.Img[posibilidad[0]] == 2 && state.Img[posibilidad[1]] == 2 && state.Img[posibilidad[2]] == 2){
+                    setGanador({ganador: "los circulos"})
+                }
+            });
+            if(!state.Img.includes(0)){
+                setGanador({ganador: "Empate"})
             }
-        });
-        posib.forEach(posibilidad => {
-            if(state.Img[posibilidad[0]] == 2 && state.Img[posibilidad[1]] == 2 && state.Img[posibilidad[2]] == 2){
-                setGanador({ganador: "los circulos"})
+        }
+    }, [NJugada.NJugada])
+
+    useEffect(() => {
+        if(props.route.params.replay) {
+            console.log("socket.signo: " + socket.signo)
+            setState({Img: [0,0,0,0,0,0,0,0,0]});
+            setShow(true)
+            setGanador({ganador: ""})
+            setNJugada({NJugada: 0})
+            socket.signo = 2
+        }
+        socket.on('Abandonar', () => {
+            props.navigation.navigate('Home')
+        })
+        socket.on("EmitMove", data => {
+            state.Img[data.Pos] = data.Signo;
+            setState({Img: state.Img})
+            setNJugada({ NJugada: data.NJugada });
+            verif()   
+        })
+    
+        socket.on('Signomulti', data => {
+            if(data == true){
+                socket.signo = 1;  //X
+                setJugador(1)
+            } else {
+                socket.signo = 0; //O
+                setJugador(0)
             }
-        });
-        if(!state.Img.includes(0)){
-            setGanador({ganador: "Empate"})
+        })
+        return () => {
+            console.log('Cleenup')
         }
-    }
-
-
-    socket.on("EmitMove", data => {
-        state.Img[data.Pos] = data.Signo
-        setState({Img: state.Img})
-        setNJugada({ NJugada: data.NJugada });
-        verif()   
-    })
-
-    socket.on('Signomulti', data => {
-        setJugada({Cruz: data})
-        console.log("HOLA");
-        if(data == true){
-            socket.signo = "X";
-        } else {
-            socket.signo = "O";
-        }
-    })
-
-
-    // const BackButtonListener = ({ cihldren }) => {
-    //     useEffect(() => {
-    //         window.onpopstate = e => {
-    //             console.log(`Boton pressed`)
-    //             props.navigation.navigate('Jugar_Con_Amigos_Sala')
-    //         }
-    //     },[])
-    //     return (
-    //         <View></View>
-    //     )
-    // }
+    }, [])
+    
     
     const move = (btn) => {
-        if(NJugada.NJugada % 2 == 0 && socket.signo == "X" && state.Img[btn] == 0) {
+        if(NJugada.NJugada % 2 == 0 && Jugador === 1 && state.Img[btn] == 0) {
             state.Img[btn] = 1
             setNJugada({NJugada: NJugada.NJugada + 1})
             socket.emit("EmitMove", {Pos: btn, Signo: 1, NJugada: (NJugada.NJugada + 1)})
-        } else if(NJugada.NJugada % 2 != 0 && socket.signo == "O" && state.Img[btn] == 0){
+        } else if(NJugada.NJugada % 2 != 0 && Jugador === 0 && state.Img[btn] == 0){
             state.Img[btn] = 2
             setNJugada({NJugada: NJugada.NJugada+1})
             socket.emit("EmitMove", {Pos: btn, Signo: 2, NJugada: (NJugada.NJugada + 1)})  
@@ -98,13 +103,16 @@ const MultiJugador = (props) => {
         verif()
     }
 
-    // const PlayAgain = () => {
-    //     socket.emit('PlayAgain')
-    //     socket.on('PlayAgain', () => {
-    //         setState({Img: [0,0,0,0,0,0,0,0,0]});
-    //         setGanador({ganador: ""})
-    //     })
-    // }
+    const PlayAgain = () => {
+        socket.emit('PlayAgain')
+        props.navigation.navigate('Loading', {Multijugador: true,Codigo:false, replay: true})
+        // socket.on('Signomulti', (data) => {
+        //     setState({Img: [0,0,0,0,0,0,0,0,0]});
+        //     setShow(true)
+        //     setGanador({ganador: ""})
+        //     setNJugada({NJugada: 0})
+        // })
+    }
     return (
         <View style={styles.app}>
             {
@@ -112,16 +120,23 @@ const MultiJugador = (props) => {
                     <Text style={styles.textoGanador}>{ganador.ganador != "Empate"?`Ganaron ${ganador.ganador}`:"Empate"}</Text>
             }
             {
-                Jugada.Cruz == true && (
+                Jugador === 1 && (
                     !state.Img.includes(1) && !state.Img.includes(2) && (
                         <Text style={[{marginBottom: hp(-5)},styles.textoGanador]}>Empezas</Text>
                     )
                 )
             }
             {
-                Jugada.Cruz == false && (
+                Jugador === 0 && (
                     !state.Img.includes(1) && !state.Img.includes(2) && (
                         <Text style={[{marginBottom: hp(-5)},styles.textoGanador]}>Empieza tu rival</Text>
+                    )
+                )        
+            }
+            {
+                Jugador === 2 && (
+                    !state.Img.includes(1) && !state.Img.includes(2) && (
+                        <Text style={[{marginBottom: hp(-5)},styles.textoGanador]}>Esperando a tu rival</Text>
                     )
                 )        
             }
@@ -181,9 +196,14 @@ const MultiJugador = (props) => {
             {
                 ganador.ganador.length > 0 &&
                 <View style={{flexDirection: Dimensions.get('window').height < 650? "row" : "column", justifyContent: "space-around", top: Dimensions.get('window').height < 650? 0 : -40}}>
-                    <TouchableOpacity style={[styles.btn_PlayAgain, { marginTop: Dimensions.get('window').height < 650? wp(-20):wp(-15)}]} onPress={() => PlayAgain()}>
-                        <Text style={{flex: 1, color: "#FD2828", textAlign: "center", textAlignVertical: "center", fontWeight: "bold", fontSize: 18}}>Jugar de nuevo</Text>
-                    </TouchableOpacity>
+                    { Show &&
+                        <TouchableOpacity style={[styles.btn_PlayAgain, { marginTop: Dimensions.get('window').height < 650? wp(-20):wp(-15)}]} onPress={() => PlayAgain()}>
+                            <Text style={{flex: 1, color: "#FD2828", textAlign: "center", textAlignVertical: "center", fontWeight: "bold", fontSize: 18}}>Jugar de nuevo</Text>
+                        </TouchableOpacity> 
+                        }
+                    {!Show && 
+                        <Text style={{flex: 1, color: "#EDEDED", textAlign: "center", textAlignVertical: "center", fontWeight: "bold", fontSize: 18}}>Esperando al otro jugador</Text>
+                    }
                     <TouchableOpacity style={[styles.btn_PlayAgain, { marginTop: Dimensions.get('window').height < 650? wp(-20):30}]} onPress={() => props.navigation.navigate('Home')}>
                         <Text style={{flex: 1, color: "#FD2828", textAlign: "center", textAlignVertical: "center", fontWeight: "bold", fontSize: 18}}>Abandonar</Text>
                     </TouchableOpacity>

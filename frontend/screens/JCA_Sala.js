@@ -2,9 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { View, Text, KeyboardAvoidingView, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native'
 import { wp, hp } from '../Functions/Porcentajes'
 import socket from '../Functions/SocketIo'
-/* TODO
-    --Arreglar keyboardAvoidView -> Not Working
-*/
+
 
 
 const JCA_Sala = (props) => {
